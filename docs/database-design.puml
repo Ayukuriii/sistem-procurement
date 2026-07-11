@@ -1,0 +1,171 @@
+@startuml ProcureFlow-ERD
+
+title ProcureFlow - Database Entity Relationship Diagram
+
+skinparam linetype ortho
+hide circle
+hide empty methods
+hide empty fields
+
+' ==========================
+' AUTH & ROLE MANAGEMENT
+' ==========================
+
+entity "users" as users {
+  * id : integer <<PK>>
+  --
+  * public_id : UUID
+  * name : string
+  * email : string <<unique>>
+  * password : string
+  is_active : boolean
+  metadata : json
+  email_verified_at : datetime
+  * created_at : datetime
+  * updated_at : datetime
+  deleted_at : datetime <<soft delete>>
+}
+
+entity "roles" as roles {
+  * id : integer <<PK>>
+  --
+  * public_id : UUID
+  * name : string <<unique>>
+  guard_name : string
+  * created_at : datetime
+  * updated_at : datetime
+}
+
+entity "permissions" as permissions {
+  * id : integer <<PK>>
+  --
+  * public_id : UUID
+  * name : string <<unique>>
+  guard_name : string
+  * created_at : datetime
+  * updated_at : datetime
+}
+
+entity "model_has_roles" as model_has_roles {
+  * role_id : integer <<FK>>
+  * model_id : integer <<FK>>
+  * model_type : string
+}
+
+entity "role_has_permissions" as role_has_permissions {
+  * permission_id : integer <<FK>>
+  * role_id : integer <<FK>>
+}
+
+' ==========================
+' MASTER DATA
+' ==========================
+
+entity "suppliers" as suppliers {
+  * id : integer <<PK>>
+  --
+  * public_id : UUID
+  * name : string
+  email : string
+  phone : string
+  address : text
+  * is_active : boolean
+  metadata : json
+  * created_at : datetime
+  * updated_at : datetime
+  deleted_at : datetime <<soft delete>>
+}
+
+entity "products" as products {
+  * id : integer <<PK>>
+  --
+  * public_id : UUID
+  * sku : string <<unique>>
+  * name : string
+  category : string
+  * unit_price : decimal
+  * is_active : boolean
+  specifications : json
+  * created_at : datetime
+  * updated_at : datetime
+  deleted_at : datetime <<soft delete>>
+}
+
+' ==========================
+' TRANSACTIONAL DATA
+' ==========================
+
+entity "purchase_orders" as purchase_orders {
+  * id : integer <<PK>>
+  --
+  * public_id : UUID
+  * po_number : string <<unique>>
+  * supplier_id : integer <<FK>>
+  * order_date : datetime
+  * status : enum(draft,submitted,approved,received,cancelled)
+  * is_urgent : boolean
+  notes : json
+  attachment_path : string
+  * created_by : integer <<FK -> users.id>>
+  * created_at : datetime
+  * updated_at : datetime
+  deleted_at : datetime <<soft delete>>
+}
+
+entity "purchase_order_items" as purchase_order_items {
+  * id : integer <<PK>>
+  --
+  * public_id : UUID
+  * purchase_order_id : integer <<FK>>
+  * product_id : integer <<FK>>
+  * product_name_snapshot : string
+  * unit_price_snapshot : decimal
+  * quantity : integer
+  * subtotal : decimal
+  * created_at : datetime
+  * updated_at : datetime
+  deleted_at : datetime <<soft delete>>
+}
+
+' ==========================
+' AUDIT (laravel-auditing)
+' ==========================
+
+entity "audits" as audits {
+  * id : integer <<PK>>
+  --
+  * public_id : UUID
+  user_id : integer <<FK>>
+  * event : string
+  * auditable_type : string
+  * auditable_id : integer
+  old_values : json
+  new_values : json
+  url : string
+  ip_address : string
+  user_agent : string
+  * created_at : datetime
+  * updated_at : datetime
+}
+
+' ==========================
+' RELATIONSHIPS
+' ==========================
+
+users ||--o{ model_has_roles : "assigned via"
+roles ||--o{ model_has_roles : "assigned via"
+roles ||--o{ role_has_permissions : "has"
+permissions ||--o{ role_has_permissions : "granted via"
+
+suppliers ||--o{ purchase_orders : "has many"
+users ||--o{ purchase_orders : "created by"
+purchase_orders ||--o{ purchase_order_items : "has many"
+products ||--o{ purchase_order_items : "referenced by"
+
+users ||--o{ audits : "performed by"
+purchase_orders ..> audits : "auditable"
+purchase_order_items ..> audits : "auditable"
+suppliers ..> audits : "auditable"
+products ..> audits : "auditable"
+
+@enduml
