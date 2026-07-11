@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Constants\Roles;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class RoleSeeder extends Seeder
@@ -22,6 +23,7 @@ class RoleSeeder extends Seeder
         // Loop and insert safely to prevent duplicate entry exceptions
         foreach ($roles as $role) {
             Role::firstOrCreate([
+                'public_id' => Str::uuid7(),
                 'name' => $role,
                 'guard_name' => 'web',
             ]);

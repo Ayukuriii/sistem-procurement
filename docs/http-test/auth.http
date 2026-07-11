@@ -1,0 +1,24 @@
+### Global variables
+@baseUrl = http://procureflow.test/api
+@contentJson = application/json
+
+### POST /login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentJson}}
+
+{
+    "email": "ekadianharis@gmail.com",
+    "password": "password123"
+}
+
+### GET /me
+GET {{baseUrl}}/auth/me
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### POST /logout
+POST {{baseUrl}}/auth/logout
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}

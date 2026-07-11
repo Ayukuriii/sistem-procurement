@@ -11,7 +11,7 @@ info:
     name: Ekadian Haris
     email: ekadianharis@gmail.com
 servers:
-  - url: http://localhost:8080/api/v1
+  - url: http://localhost:8080/api
     description: Local / staging
 
 tags:
@@ -140,6 +140,9 @@ components:
       properties:
         token:
           type: string
+        token_type:
+          type: string
+          example: 'Bearer'
         user:
           $ref: "#/components/schemas/User"
 
