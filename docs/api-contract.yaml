@@ -1,0 +1,1889 @@
+openapi: 3.0.3
+info:
+  title: ProcureFlow API
+  description: >
+    REST API for ProcureFlow — a Purchase Order management system with
+    authentication, role-based access control, audit trail, and Excel
+    export/import. Architecture: Laravel API (backend) + Vue (frontend,
+    decoupled).
+  version: "1.1.0"
+  contact:
+    name: Ekadian Haris
+    email: ekadianharis@gmail.com
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local / staging
+
+tags:
+  - name: Auth
+  - name: Users
+  - name: Roles & Permissions
+  - name: Suppliers
+  - name: Product Categories
+  - name: Products
+  - name: Purchase Orders
+  - name: Purchase Order Items
+  - name: Documents
+  - name: Audits
+  - name: Export & Import
+
+# ============================================================
+# SECURITY
+# ============================================================
+security:
+  - bearerAuth: []
+
+# ============================================================
+# COMPONENTS
+# ============================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: "Sanctum Token"
+      description: "Laravel Sanctum personal access token, sent as `Authorization: Bearer {token}`"
+
+  parameters:
+    PublicId:
+      name: publicId
+      in: path
+      required: true
+      description: UUID public identifier of the resource
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 15
+    SortParam:
+      name: sort
+      in: query
+      description: "Field to sort by. Prefix with `-` for descending, e.g. -created_at"
+      schema:
+        type: string
+    SearchParam:
+      name: search
+      in: query
+      description: Full-text search across relevant fields (name, sku, po_number, etc.)
+      schema:
+        type: string
+    IncludeTrashedParam:
+      name: include_trashed
+      in: query
+      description: Include soft-deleted records
+      schema:
+        type: boolean
+        default: false
+
+  schemas:
+    # ---------- COMMON ----------
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        last_page:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        error_code:
+          type: string
+
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "The given data was invalid."
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    # ---------- AUTH ----------
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    # ---------- USERS / ROLES ----------
+    Role:
+      type: object
+      properties:
+        public_id:
+          type: string
+          format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        name:
+          type: string
+          example: "administrator"
+
+    Permission:
+      type: object
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "purchase-orders.approve"
+
+    User:
+      type: object
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        is_active:
+          type: boolean
+        email_verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UserCreate:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        is_active:
+          type: boolean
+          default: true
+        role_ids:
+          type: array
+          description: Array of Role public_id (UUID)
+          items:
+            type: string
+            format: uuid
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          description: Optional, only sent when resetting the password
+        is_active:
+          type: boolean
+
+    AssignRolesRequest:
+      type: object
+      required: [role_ids]
+      properties:
+        role_ids:
+          type: array
+          description: Array of Role public_id (UUID)
+          items:
+            type: string
+            format: uuid
+            example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+
+    # ---------- SUPPLIERS ----------
+    Supplier:
+      type: object
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SupplierWrite:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        is_active:
+          type: boolean
+          default: true
+        metadata:
+          type: object
+          additionalProperties: true
+
+    # ---------- PRODUCT CATEGORIES ----------
+    ProductCategory:
+      type: object
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ProductCategoryWrite:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+
+    # ---------- PRODUCTS ----------
+    Product:
+      type: object
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        category:
+          $ref: "#/components/schemas/ProductCategory"
+        sku:
+          type: string
+        name:
+          type: string
+        unit_price:
+          type: integer
+          description: Unit price in the smallest currency unit (e.g. whole Rupiah)
+        is_active:
+          type: boolean
+        specifications:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProductWrite:
+      type: object
+      required: [category_id, sku, name, unit_price]
+      properties:
+        category_id:
+          type: string
+          format: uuid
+          description: ProductCategory public_id
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        sku:
+          type: string
+        name:
+          type: string
+        unit_price:
+          type: integer
+        is_active:
+          type: boolean
+          default: true
+        specifications:
+          type: object
+          additionalProperties: true
+
+    # ---------- PURCHASE ORDERS ----------
+    PurchaseOrderStatus:
+      type: string
+      enum: [draft, submitted, approved, received, cancelled]
+
+    PurchaseOrder:
+      type: object
+      description: >
+        Purchase order header. Line items are NOT embedded by default —
+        fetch them via GET /purchase-orders/{publicId}/items, or pass
+        ?include=items on the detail endpoint to embed them in a single
+        request.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        po_number:
+          type: string
+        supplier:
+          $ref: "#/components/schemas/Supplier"
+        creator:
+          $ref: "#/components/schemas/User"
+        order_date:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/PurchaseOrderStatus"
+        is_urgent:
+          type: boolean
+        notes:
+          type: object
+          additionalProperties: true
+          nullable: true
+        item_count:
+          type: integer
+          description: Number of line items belonging to this PO
+        items_total:
+          type: integer
+          description: Sum of subtotal across all line items
+        # items:
+        #   type: array
+        #   description: >
+        #     Only present in the response when the request includes
+        #     ?include=items. Omitted by default.
+        #   items:
+        #     $ref: "#/components/schemas/PurchaseOrderItem"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PurchaseOrderCreate:
+      type: object
+      required: [supplier_id, order_date, items]
+      properties:
+        supplier_id:
+          type: string
+          format: uuid
+          description: Supplier public_id
+        order_date:
+          type: string
+          format: date
+        is_urgent:
+          type: boolean
+          default: false
+        notes:
+          type: object
+          additionalProperties: true
+        items:
+          type: array
+          minItems: 1
+          description: Initial line items to create along with the PO
+          items:
+            $ref: "#/components/schemas/PurchaseOrderItemCreate"
+
+    PurchaseOrderUpdate:
+      type: object
+      description: Only allowed while status is `draft`
+      properties:
+        supplier_id:
+          type: string
+          format: uuid
+        order_date:
+          type: string
+          format: date
+        is_urgent:
+          type: boolean
+        notes:
+          type: object
+          additionalProperties: true
+
+    PurchaseOrderStatusChange:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: Optional; required for the cancel action
+
+    # ---------- PURCHASE ORDER ITEMS ----------
+    PurchaseOrderItem:
+      type: object
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        purchase_order_id:
+          type: string
+          format: uuid
+          description: Parent PurchaseOrder public_id
+        product:
+          $ref: "#/components/schemas/Product"
+        product_name_snapshot:
+          type: string
+        unit_price_snapshot:
+          type: number
+          format: decimal
+        quantity:
+          type: integer
+        subtotal:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    PurchaseOrderItemCreate:
+      type: object
+      required: [product_id, quantity]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          description: Product public_id
+        quantity:
+          type: integer
+          minimum: 1
+
+    PurchaseOrderItemUpdate:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+
+    # ---------- DOCUMENTS ----------
+    Document:
+      type: object
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          properties:
+            file_name:
+              type: string
+            file_url:
+              type: string
+              format: uri
+            mime_type:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+
+    # ---------- AUDITS ----------
+    Audit:
+      type: object
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        user:
+          $ref: "#/components/schemas/User"
+        event:
+          type: string
+          enum: [created, updated, deleted, restored, status_changed]
+        auditable_type:
+          type: string
+          example: "purchase_order"
+        auditable_id:
+          type: string
+          format: uuid
+          description: public_id of the audited resource
+        old_values:
+          type: object
+          additionalProperties: true
+          nullable: true
+        new_values:
+          type: object
+          additionalProperties: true
+          nullable: true
+        url:
+          type: string
+        ip_address:
+          type: string
+        user_agent:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    # ---------- EXPORT & IMPORT ----------
+    ExportableModule:
+      type: string
+      description: Modules that support export to Excel
+      enum: [users, suppliers, product_categories, products, purchase_orders]
+
+    ImportableModule:
+      type: string
+      description: >
+        Modules that support import from Excel. purchase_orders is not
+        importable — it must be created through the standard PO endpoints
+        so line-item pricing snapshots and status transitions stay consistent.
+      enum: [users, suppliers, product_categories, products]
+
+    ExportJobStatus:
+      type: string
+      enum: [queued, processing, completed, failed]
+
+    ExportRequest:
+      type: object
+      required: [module]
+      properties:
+        module:
+          $ref: "#/components/schemas/ExportableModule"
+        filters:
+          type: object
+          additionalProperties: true
+          description: >
+            Module-specific filters, applied the same way as the
+            corresponding list endpoint's query parameters. Examples:
+            `{"status": "approved", "supplier_id": "..."}` for
+            purchase_orders, `{"is_active": true}` for products,
+            `{"role": "staff"}` for users. Unknown keys for the chosen
+            module are ignored.
+
+    ExportJob:
+      type: object
+      properties:
+        export_job_id:
+          type: string
+          format: uuid
+        module:
+          $ref: "#/components/schemas/ExportableModule"
+        status:
+          $ref: "#/components/schemas/ExportJobStatus"
+        requested_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        download_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Only present once status is `completed`. Also emailed to the requesting user.
+        failure_reason:
+          type: string
+          nullable: true
+
+    ImportRowError:
+      type: object
+      properties:
+        row:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+
+    ImportResult:
+      type: object
+      properties:
+        module:
+          $ref: "#/components/schemas/ImportableModule"
+        imported_count:
+          type: integer
+        failed_count:
+          type: integer
+        failed_rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRowError"
+
+  responses:
+    Unauthorized:
+      description: Token is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: User does not have permission to perform this action
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationFailed:
+      description: Payload failed validation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationError"
+
+# ============================================================
+# PATHS
+# ============================================================
+paths:
+  # ---------------- AUTH ----------------
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in and issue a token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke the current token
+      responses:
+        "204":
+          description: Logout successful
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the currently authenticated user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ---------------- USERS ----------------
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Users]
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /users/{publicId}:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    get:
+      tags: [Users]
+      summary: Get user details
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Users]
+      summary: Update a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Users]
+      summary: Soft delete a user
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /users/{publicId}/roles:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    put:
+      tags: [Users]
+      summary: Sync roles assigned to a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignRolesRequest"
+      responses:
+        "200":
+          description: Roles updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  # ---------------- ROLES & PERMISSIONS ----------------
+  /roles:
+    get:
+      tags: [Roles & Permissions]
+      summary: List all roles
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Role"
+
+  /permissions:
+    get:
+      tags: [Roles & Permissions]
+      summary: List all permissions
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Permission"
+
+  # ---------------- SUPPLIERS ----------------
+  /suppliers:
+    get:
+      tags: [Suppliers]
+      summary: List suppliers
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/SortParam"
+        - $ref: "#/components/parameters/IncludeTrashedParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Supplier"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      tags: [Suppliers]
+      summary: Create a supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Supplier"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /suppliers/{publicId}:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    get:
+      tags: [Suppliers]
+      summary: Get supplier details
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Supplier"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Suppliers]
+      summary: Update a supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Supplier"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    delete:
+      tags: [Suppliers]
+      summary: Soft delete a supplier
+      description: Rejected if the supplier still has active purchase orders (status other than cancelled/received)
+      responses:
+        "204":
+          description: Deleted
+        "409":
+          description: Supplier is still referenced by an active purchase order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------- PRODUCT CATEGORIES ----------------
+  /product-categories:
+    get:
+      tags: [Product Categories]
+      summary: List product categories
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProductCategory"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      tags: [Product Categories]
+      summary: Create a product category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductCategoryWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ProductCategory"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /product-categories/{publicId}:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    get:
+      tags: [Product Categories]
+      summary: Get product category details
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ProductCategory"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Product Categories]
+      summary: Update a product category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductCategoryWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ProductCategory"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Product Categories]
+      summary: Delete a product category
+      description: Rejected if any product still references this category
+      responses:
+        "204":
+          description: Deleted
+        "409":
+          description: Category is still referenced by one or more products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------- PRODUCTS ----------------
+  /products:
+    get:
+      tags: [Products]
+      summary: List products
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/SortParam"
+        - $ref: "#/components/parameters/IncludeTrashedParam"
+        - name: category_id
+          in: query
+          description: Filter by ProductCategory public_id
+          schema:
+            type: string
+            format: uuid
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      tags: [Products]
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Product"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /products/{publicId}:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    get:
+      tags: [Products]
+      summary: Get product details
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Products]
+      summary: Update a product
+      description: >
+        Changing unit_price here does NOT affect existing purchase orders,
+        since price is snapshotted on purchase_order_items at creation time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Product"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    delete:
+      tags: [Products]
+      summary: Soft delete a product
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------- PURCHASE ORDERS ----------------
+  /purchase-orders:
+    get:
+      tags: [Purchase Orders]
+      summary: List purchase orders
+      description: List responses never embed line items — use item_count / items_total for a quick summary.
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/SortParam"
+        - $ref: "#/components/parameters/IncludeTrashedParam"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/PurchaseOrderStatus"
+        - name: supplier_id
+          in: query
+          description: Filter by Supplier public_id
+          schema:
+            type: string
+            format: uuid
+        - name: is_urgent
+          in: query
+          schema:
+            type: boolean
+        - name: order_date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: order_date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PurchaseOrder"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      tags: [Purchase Orders]
+      summary: Create a purchase order (initial status = draft)
+      description: >
+        po_number is generated by the server. product_name_snapshot and
+        unit_price_snapshot on each item are captured from the current
+        product data at creation time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrder"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /purchase-orders/{publicId}:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    get:
+      tags: [Purchase Orders]
+      summary: Get purchase order details
+      parameters:
+        - name: include
+          in: query
+          description: >
+            Comma-separated list of relations to embed. Currently supports
+            `items`. Example: ?include=items
+          schema:
+            type: string
+            example: items
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrder"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Purchase Orders]
+      summary: Update PO header fields
+      description: Only allowed while status is draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrder"
+        "409":
+          description: PO is no longer in draft status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    delete:
+      tags: [Purchase Orders]
+      summary: Soft delete a PO
+      description: Only allowed while status is draft or cancelled
+      responses:
+        "204":
+          description: Deleted
+        "409":
+          description: PO cannot be deleted in its current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /purchase-orders/{publicId}/submit:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    post:
+      tags: [Purchase Orders]
+      summary: "Status transition: draft -> submitted"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderStatusChange"
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrder"
+        "409":
+          description: Invalid transition from the current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /purchase-orders/{publicId}/approve:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    post:
+      tags: [Purchase Orders]
+      summary: "Status transition: submitted -> approved"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderStatusChange"
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrder"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Invalid transition from the current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /purchase-orders/{publicId}/receive:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    post:
+      tags: [Purchase Orders]
+      summary: "Status transition: approved -> received"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderStatusChange"
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrder"
+        "409":
+          description: Invalid transition from the current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /purchase-orders/{publicId}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    post:
+      tags: [Purchase Orders]
+      summary: "Status transition: draft/submitted/approved -> cancelled"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/PurchaseOrderStatusChange"
+              required: [reason]
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrder"
+        "409":
+          description: A PO that is already received cannot be cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ---------------- PURCHASE ORDER ITEMS ----------------
+  # Standalone resource: never embedded in PO list/detail responses by
+  # default. Always paginated to stay safe for POs with a large number
+  # of line items.
+  /purchase-orders/{publicId}/items:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    get:
+      tags: [Purchase Order Items]
+      summary: List items belonging to a PO (paginated)
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PurchaseOrderItem"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      tags: [Purchase Order Items]
+      summary: Add an item to a PO
+      description: Only allowed while PO status is draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderItemCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrderItem"
+        "409":
+          description: PO is no longer in draft status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /purchase-orders/{publicId}/items/{itemPublicId}:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+      - name: itemPublicId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Purchase Order Items]
+      summary: Get a single item's details
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrderItem"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Purchase Order Items]
+      summary: Update an item's quantity
+      description: Only allowed while PO status is draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderItemUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PurchaseOrderItem"
+        "409":
+          description: PO is no longer in draft status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Purchase Order Items]
+      summary: Remove an item from a PO
+      description: Only allowed while PO status is draft
+      responses:
+        "204":
+          description: Deleted
+        "409":
+          description: PO is no longer in draft status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ---------------- DOCUMENTS ----------------
+  /purchase-orders/{publicId}/documents:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    get:
+      tags: [Documents]
+      summary: List documents attached to a PO
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Document"
+    post:
+      tags: [Documents]
+      summary: Upload an attachment (invoice, delivery note, etc.)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                metadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Document"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /documents/{publicId}:
+    parameters:
+      - $ref: "#/components/parameters/PublicId"
+    get:
+      tags: [Documents]
+      summary: Get document details (including a signed download URL)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Document"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Documents]
+      summary: Delete a document
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------- AUDITS ----------------
+  /audits:
+    get:
+      tags: [Audits]
+      summary: List audit trail entries (read-only)
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - name: auditable_type
+          in: query
+          schema:
+            type: string
+            example: "purchase_order"
+        - name: auditable_id
+          in: query
+          description: public_id of the audited resource
+          schema:
+            type: string
+            format: uuid
+        - name: user_id
+          in: query
+          description: User public_id
+          schema:
+            type: string
+            format: uuid
+        - name: event
+          in: query
+          schema:
+            type: string
+            enum: [created, updated, deleted, restored, status_changed]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Audit"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+
+  # ---------------- EXPORT & IMPORT ----------------
+  # Generic, module-driven endpoints. The UI is expected to pass `module`
+  # to indicate which resource to export/import, instead of relying on
+  # per-resource export/import routes.
+  /exports:
+    get:
+      tags: [Export & Import]
+      summary: List export jobs requested by the current user
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - name: module
+          in: query
+          schema:
+            $ref: "#/components/schemas/ExportableModule"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExportJob"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      tags: [Export & Import]
+      summary: Request an export for a given module
+      description: >
+        Export runs asynchronously in the background regardless of module
+        or data size. The response only confirms the job was queued; the
+        resulting .xlsx file is emailed to the requesting user as a
+        download link once ready. Poll GET /exports/{exportJobId} if the
+        UI needs to reflect job progress instead of waiting for email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportRequest"
+      responses:
+        "202":
+          description: Export job queued. The file will be emailed to the requesting user once ready.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ExportJob"
+                  message:
+                    type: string
+                    example: "Your export is being prepared. We'll email you a download link when it's ready."
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /exports/{exportJobId}:
+    parameters:
+      - name: exportJobId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Export & Import]
+      summary: Check the status of an export job
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ExportJob"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /imports:
+    post:
+      tags: [Export & Import]
+      summary: Import data for a given module from Excel (.xlsx)
+      description: >
+        Rows are validated individually. A row with errors does not fail
+        the whole import — failed rows are returned in `failed_rows` so
+        the user can correct and re-upload. Processed synchronously; the
+        response reflects the final result of the whole file.
+
+
+        Module-specific validation:
+
+        - **users**: each row must include a `role` column with value
+          `administrator` or `staff`. The system verifies the value
+          against existing roles before inserting. If a row's role value
+          does not match any recognized role, that row is rejected and
+          reported in `failed_rows` — it is not inserted.
+        - **suppliers**, **product_categories**, **products**: validated
+          against the same rules as their respective create endpoints
+          (required fields, uniqueness of sku/name/email, etc.).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [module, file]
+              properties:
+                module:
+                  $ref: "#/components/schemas/ImportableModule"
+                file:
+                  type: string
+                  format: binary
+                  description: .xlsx file matching the import template for the chosen module
+      responses:
+        "200":
+          description: Import processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ImportResult"
+        "422":
+          description: File does not match the expected template for the chosen module
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /imports/template:
+    get:
+      tags: [Export & Import]
+      summary: Download the Excel import template for a given module
+      parameters:
+        - name: module
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/ImportableModule"
+      description: >
+        The users template includes a `role` column documenting the
+        accepted values (administrator, staff).
+      responses:
+        "200":
+          description: Template file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "422":
+          description: Unknown or unsupported module
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
