@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class PurchaseOrder extends Model
 {
+    use HasPublicId;
+
     protected $fillable = [
-        'public_id',
         'po_number',
         'supplier_id',
         'creator_id',
@@ -24,14 +27,22 @@ class PurchaseOrder extends Model
         return [
             'is_urgent' => 'boolean',
             'notes' => 'array',
-            'order_date' => 'datetime:Y-m-d H:i:s'
+            'order_date' => 'datetime:Y-m-d H:i:s',
         ];
     }
 
     /**
-     * Get the Supplier that owns the PurchaseOrderController
+     * Get documents attached to this booking
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return MorphMany<Document>
+     */
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
+    }
+
+    /**
+     * Get the Supplier that owns the PurchaseOrderController
      */
     public function supplier(): BelongsTo
     {
@@ -40,8 +51,6 @@ class PurchaseOrder extends Model
 
     /**
      * Get the User that owns the PurchaseOrder
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -50,8 +59,6 @@ class PurchaseOrder extends Model
 
     /**
      * Get all of the Items for the PurchaseOrder
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function items(): HasMany
     {

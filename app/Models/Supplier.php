@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Supplier extends Model
 {
+    use HasPublicId;
+
     protected $fillable = [
-        'public_id',
         'name',
         'email',
         'phone',
@@ -27,11 +29,9 @@ class Supplier extends Model
 
     /**
      * Get all of the PurchaseOrders for the Supplier
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function purchaseOrders(): HasMany
     {
-        return $this->hasMany(purchaseOrder::class, 'supplier_id', 'id');
+        return $this->hasMany(PurchaseOrder::class, 'supplier_id', 'id');
     }
 }

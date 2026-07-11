@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
+        Schema::create('documents', function (Blueprint $table) {
             $table->id();
             $table->uuid('public_id')->unique();
-            $table->string('name', 255);
-            $table->boolean('is_active')->default(true);
+            $table->morphs('documentable');
+            $table->string('file_path', 500);
+            $table->json('metadata'); // To stores name, extension, etc...
             $table->timestamps();
             $table->softDeletes();
         });
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('categories');
+        Schema::dropIfExists('documents');
     }
 };

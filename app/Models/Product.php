@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Product extends Model
 {
+    use HasPublicId;
+
     protected $fillable = [
-        'public_id',
         'category_id',
         'sku',
         'name',
@@ -27,8 +29,6 @@ class Product extends Model
 
     /**
      * Get the Category that owns the Product
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function category(): BelongsTo
     {

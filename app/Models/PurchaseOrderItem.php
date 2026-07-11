@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PurchaseOrderItem extends Model
 {
+    use HasPublicId;
+
     protected $fillable = [
-        'public_id',
         'purchase_order_id',
         'product_id',
         'product_name_snapshot',
@@ -17,10 +19,15 @@ class PurchaseOrderItem extends Model
         'subtotal',
     ];
 
+    public function casts(): array
+    {
+        return [
+            'quantity' => 'integer',
+        ];
+    }
+
     /**
      * Get the PurchaseOrder that owns the PurchaseOrderItem
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function purchaseOrder(): BelongsTo
     {
@@ -29,8 +36,6 @@ class PurchaseOrderItem extends Model
 
     /**
      * Get the Product that owns the PurchaseOrderItem
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function product(): BelongsTo
     {

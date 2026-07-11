@@ -15,11 +15,11 @@ return new class extends Migration
     {
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->id();
-            $table->uuid('public_id');
-            $table->string('po_number')->unique('');
-            $table->foreignIdFor(Supplier::class);
-            $table->foreignIdFor(User::class, 'creator_id');
-            $table->dateTime('order_date')->default(now());
+            $table->uuid('public_id')->unique();
+            $table->string('po_number')->unique();
+            $table->foreignIdFor(Supplier::class)->constrained();
+            $table->foreignIdFor(User::class, 'creator_id')->constrained();
+            $table->dateTime('order_date');
             $table->string('status');
             $table->boolean('is_urgent')->default(false);
             $table->json('notes')->nullable();

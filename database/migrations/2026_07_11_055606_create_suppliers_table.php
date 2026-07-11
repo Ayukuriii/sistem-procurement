@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
-            $table->uuid('public_id');
-            $table->string('name',255);
-            $table->string('email', 255);
-            $table->string('phone', 20);
-            $table->text('address');
+            $table->uuid('public_id')->unique();
+            $table->string('name', 255);
+            $table->string('email', 255)->nullable();
+            $table->string('phone', 20)->nullable();
+            $table->text('address')->nullable();
             $table->boolean('is_active')->default(true);
             $table->json('metadata');
             $table->timestamps();
-            $table->softDeletes()->nullable();
+            $table->softDeletes();
         });
     }
 

@@ -14,14 +14,15 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->uuid('public_id');
-            $table->foreignIdFor(Category::class);
-            $table->string('sku');
+            $table->uuid('public_id')->unique();
+            $table->foreignIdFor(Category::class)->constrained();
+            $table->string('sku', 50)->unique();
             $table->string('name', 255);
             $table->bigInteger('unit_price')->default(0);
             $table->boolean('is_active')->default(true);
             $table->json('specifications');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

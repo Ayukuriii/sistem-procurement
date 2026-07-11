@@ -2,20 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
+    use HasPublicId;
+
     protected $fillable = [
-        'public_id',
-        'name'
+        'name',
     ];
 
     /**
      * Get all of the Products for the Category
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function products(): HasMany
     {

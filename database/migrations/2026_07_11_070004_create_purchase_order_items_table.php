@@ -15,10 +15,10 @@ return new class extends Migration
     {
         Schema::create('purchase_order_items', function (Blueprint $table) {
             $table->id();
-            $table->uuid('public_id');
-            $table->foreignIdFor(PurchaseOrder::class);
-            $table->foreignIdFor(Product::class);
-            $table->string('product_name_snapshot',255);
+            $table->uuid('public_id')->unique();
+            $table->foreignIdFor(PurchaseOrder::class)->constrained();
+            $table->foreignIdFor(Product::class)->constrained();
+            $table->string('product_name_snapshot', 255);
             $table->bigInteger('unit_price_snapshot')->default(0);
             $table->integer('quantity')->default(0);
             $table->bigInteger('subtotal')->default(0);
