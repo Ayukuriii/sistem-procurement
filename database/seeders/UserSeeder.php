@@ -47,7 +47,7 @@ class UserSeeder extends Seeder
             $user->assignRole($adminRole);
         }
 
-        $staffCount = 5;
+        $staffCount = 45;
 
         for ($i = 0; $i < $staffCount; $i++) {
             $user = User::create([
