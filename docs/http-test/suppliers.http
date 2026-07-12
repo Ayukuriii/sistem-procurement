@@ -44,7 +44,7 @@ GET {{baseUrl}}/suppliers/list?search=tambak&sort=-created_at&page=1&per_page=20
 Accept: {{contentJson}}
 Authorization: Bearer {{login.response.body.data.token}}
 
-### POST /suppliers - Create a new user records
+### POST /suppliers - Create a new suppliers records
 POST {{baseUrl}}/suppliers
 Content-Type: {{contentJson}}
 Accept: {{contentJson}}
@@ -58,7 +58,7 @@ Authorization: Bearer {{login.response.body.data.token}}
     "metadata": ""
 }
 
-### POST /suppliers - Create a new user records with wrong email, password and role_id
+### POST /suppliers - Create a new suppliers records with wrong email, password and role_id
 POST {{baseUrl}}/suppliers
 Content-Type: {{contentJson}}
 Accept: {{contentJson}}
@@ -72,17 +72,17 @@ Authorization: Bearer {{login.response.body.data.token}}
     "metadata": ""
 }
 
-### Get /suppliers/{publicId} - Get detailed info of a user
+### Get /suppliers/{publicId} - Get detailed info of a suppliers
 GET {{baseUrl}}/suppliers/{{supplierId}}
 Accept: {{contentJson}}
 Authorization: Bearer {{login.response.body.data.token}}
 
-### Get /suppliers/{publicId} - Get detailed info of a user with wrong ID
+### Get /suppliers/{publicId} - Get detailed info of a suppliers with wrong ID
 GET {{baseUrl}}/suppliers/019f569c-c630-72b4-8f6c-924d2dd4fdas
 Accept: {{contentJson}}
 Authorization: Bearer {{login.response.body.data.token}}
 
-### PUT /suppliers/{publicId} - Update a user info
+### PUT /suppliers/{publicId} - Update a suppliers info
 PUT {{baseUrl}}/suppliers/{{supplierId}}
 Content-Type: {{contentJson}}
 Accept: {{contentJson}}

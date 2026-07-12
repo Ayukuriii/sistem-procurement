@@ -5,10 +5,11 @@ namespace App\Models;
 use App\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PurchaseOrderItem extends Model
 {
-    use HasPublicId;
+    use HasPublicId, SoftDeletes;
 
     protected $fillable = [
         'purchase_order_id',

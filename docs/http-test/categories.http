@@ -1,0 +1,85 @@
+### Global variables
+@baseUrl = http://procureflow.test/api
+@contentJson = application/json
+@categoryId = 019f574a-eda0-711c-91bc-5c1e39be9104
+
+### POST /login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentJson}}
+
+{
+    "email": "ekadianharis@gmail.com",
+    "password": "password123"
+}
+
+### GET /list
+GET {{baseUrl}}/categories/list
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+
+### GET /categories - dengan pagination eksplisit
+GET {{baseUrl}}/categories/list?page=1&per_page=10
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /categories - dengan search
+GET {{baseUrl}}/categories/list?search=pakaian
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /categories - sort ascending by name
+GET {{baseUrl}}/categories/list?sort=name
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /categories - kombinasi search + sort + pagination
+GET {{baseUrl}}/categories/list?search=elektro&sort=name&page=1&per_page=20
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### POST /categories - Create a new categort records
+POST {{baseUrl}}/categories
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "name": "Perkakas"
+}
+
+### POST /categories - Create a new categort records with empty name
+POST {{baseUrl}}/categories
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "name": ""
+}
+
+### Get /categories/{publicId} - Get detailed info of a categort
+GET {{baseUrl}}/categories/{{categoryId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Get /categories/{publicId} - Get detailed info of a categort with wrong ID
+GET {{baseUrl}}/categories/019f569c-c630-72b4-8f6c-924d2dd4fdas
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### PUT /categories/{publicId} - Update a categort info
+PUT {{baseUrl}}/categories/{{categoryId}}
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "name": "Perkakas"
+}
+
+### DELETE /categories/{publicId}
+DELETE {{baseUrl}}/categories/{{categoryId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
