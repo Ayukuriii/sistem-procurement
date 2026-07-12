@@ -16,7 +16,7 @@ return new class extends Migration
             $table->uuid('public_id')->unique();
             $table->morphs('documentable');
             $table->string('file_path', 500);
-            $table->json('metadata'); // To stores name, extension, etc...
+            $table->json('metadata')->nullable(); // To stores name, extension, etc...
             $table->timestamps();
             $table->softDeletes();
         });

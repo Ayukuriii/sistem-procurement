@@ -112,7 +112,7 @@ class UserService
         return $user->fresh();
     }
 
-    public function delete(string $publicId): void
+    public function destroy(string $publicId): void
     {
         $user = User::firstWhere('public_id', $publicId);
 

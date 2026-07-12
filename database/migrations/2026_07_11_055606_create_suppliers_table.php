@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('phone', 20)->nullable();
             $table->text('address')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->json('metadata');
+            $table->json('metadata')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Api\User;
+namespace App\Http\Requests\Api\Supplier;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UserCreateRequest extends FormRequest
+class SupplierCreateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,9 +24,10 @@ class UserCreateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'max:255'],
-            'role_id' => ['required', 'string', 'exists:roles,public_id'],
+            'email' => ['required',  'email', 'max:255', 'unique:suppliers,email'],
+            'phone' => ['required', 'string', 'max:20', 'unique:suppliers,email'],
+            'address' => ['required',  'string', 'max:1000'],
+            'metadata' => ['nullable', 'json'],
         ];
     }
 }
