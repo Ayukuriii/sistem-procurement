@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('name', 255);
             $table->bigInteger('unit_price')->default(0);
             $table->boolean('is_active')->default(true);
-            $table->json('specifications');
+            $table->json('specifications')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

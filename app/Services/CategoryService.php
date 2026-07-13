@@ -83,7 +83,7 @@ class CategoryService
             throw new \Exception('Category not found');
         }
 
-        if(isset($request['name'])){
+        if (isset($request['name'])) {
             $request['name'] = strtolower($request['name']);
         }
 

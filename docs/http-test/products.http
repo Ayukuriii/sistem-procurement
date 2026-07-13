@@ -1,0 +1,94 @@
+### Global variables
+@baseUrl = http://procureflow.test/api
+@contentJson = application/json
+@productId = 019f5ba7-4306-7022-995f-d7c3287e36e2
+
+### POST /login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentJson}}
+
+{
+    "email": "ekadianharis@gmail.com",
+    "password": "password123"
+}
+
+### GET /list
+GET {{baseUrl}}/products/list
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+
+### GET /products - dengan pagination eksplisit
+GET {{baseUrl}}/products/list?page=1&per_page=10
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /products - dengan search
+GET {{baseUrl}}/products/list?search=Thread
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /products - sort ascending by name
+GET {{baseUrl}}/products/list?sort=name
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /products - kombinasi search + sort + pagination
+GET {{baseUrl}}/products/list?search=elektro&sort=name&page=1&per_page=20
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### POST /products - Create a new product records
+POST {{baseUrl}}/products
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "category_id": "019f5ba6-78c8-7268-a26e-364a9ab79a90",
+    "sku": "10000002",
+    "name": "Power Threads",
+    "unit_price": "475"
+}
+
+### POST /products - Create a new product records with empty name
+POST {{baseUrl}}/products
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "category_id": "019f5ba6-78c8-7268-a26e-364a9ab79a90",
+    "sku": "10000003",
+    "name": "",
+    "unit_price": "475"
+}
+
+### Get /products/{publicId} - Get detailed info of a product
+GET {{baseUrl}}/products/{{productId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Get /products/{publicId} - Get detailed info of a product with wrong ID
+GET {{baseUrl}}/products/019f569c-c630-72b4-8f6c-924d2dd4fdas
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### PUT /products/{publicId} - Update a product info
+PUT {{baseUrl}}/products/{{productId}}
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "category_id": "019f5ba6-78c8-7268-a26e-364a9ab79a90",
+    "sku": "10000002",
+    "name": "Power Threads",
+    "unit_price": "1125"
+}
+
+### DELETE /products/{publicId}
+DELETE {{baseUrl}}/products/{{productId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}

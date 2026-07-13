@@ -46,7 +46,7 @@ Accept: {{contentJson}}
 Authorization: Bearer {{login.response.body.data.token}}
 
 {
-    "name": "Perkakas"
+    "name": "Dota 2"
 }
 
 ### POST /categories - Create a new categort records with empty name
