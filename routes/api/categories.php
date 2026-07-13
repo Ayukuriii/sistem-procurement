@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\Category\CategoryController;
 use App\Http\Controllers\Api\Category\CategoryListController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('categories')->middleware('throttle:60')->group(function () {
+Route::prefix('categories')->middleware(['auth:sanctum', 'throttle:60'])->group(function () {
     Route::get('/list', [CategoryListController::class, 'list']);
 
     Route::post('/', [CategoryController::class, 'store']);

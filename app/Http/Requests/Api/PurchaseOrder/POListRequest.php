@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Api\Product;
+namespace App\Http\Requests\Api\PurchaseOrder;
 
 use App\Constants\Paginations;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProductListRequest extends FormRequest
+class POListRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,7 +21,7 @@ class ProductListRequest extends FormRequest
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'search' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'sort' => ['sometimes', 'nullable', 'string', 'in:category,-category,sku,-sku,name,-name,unit_price,-unit_price,created_at,-created_at'],
+            'sort' => ['sometimes', 'nullable', 'string', 'in:po_number,-po_number,order_date,-order_date,created_at,-created_at'],
         ];
     }
 

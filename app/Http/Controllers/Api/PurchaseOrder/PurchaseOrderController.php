@@ -1,31 +1,32 @@
 <?php
 
-namespace App\Http\Controllers\Api\Category;
+namespace App\Http\Controllers\Api\PurchaseOrder;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Category\CategoryCreateRequest;
-use App\Http\Requests\Api\Category\CategoryUpdateRequest;
-use App\Http\Resources\Api\Category\CategoryResource;
-use App\Services\CategoryService;
+use App\Http\Requests\Api\PurchaseOrder\POCreateRequest;
+use App\Http\Requests\Api\PurchaseOrder\POUpdateRequest;
+use App\Http\Resources\Api\PurchaseOrder\PurchaseOrderResource;
+use App\Services\PurchaseOrderService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
-class CategoryController extends Controller
+class PurchaseOrderController extends Controller
 {
     public function __construct(
-        public CategoryService $categoryService
+        public PurchaseOrderService $poService
     ) {}
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(CategoryCreateRequest $request)
+    public function store(POCreateRequest $request): JsonResponse
     {
         try {
-            $res = $this->categoryService->store($request->validated());
+            $res = $this->poService->store($request->validated());
 
             return respondWithData(
-                data: new CategoryResource($res),
-                message: 'Success create user data'
+                data: new PurchaseOrderResource($res),
+                message: 'Success create purchase order data'
             );
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'already')
@@ -42,14 +43,14 @@ class CategoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $publicId)
+    public function show(string $publicId): JsonResponse
     {
         try {
-            $res = $this->categoryService->getCategory($publicId);
+            $res = $this->poService->getPurchaseOrder($publicId);
 
             return respondWithData(
-                data: new CategoryResource($res),
-                message: 'Category data retrieved successfully'
+                data: new PurchaseOrderResource($res),
+                message: 'Purchase order data retrieved successfully'
             );
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'not found')
@@ -66,14 +67,15 @@ class CategoryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(CategoryUpdateRequest $request, string $publicId)
+    public function update(POUpdateRequest $request, string $publicId): JsonResponse
     {
+        info($request);
         try {
-            $res = $this->categoryService->update($request->validated(), $publicId);
+            $res = $this->poService->update($request->validated(), $publicId);
 
             return respondWithData(
-                data: new CategoryResource($res),
-                message: 'User data updated successfully'
+                data: new PurchaseOrderResource($res),
+                message: 'Purchase order data updated successfully'
             );
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'not found')
@@ -90,13 +92,13 @@ class CategoryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $publicId)
+    public function destroy(string $publicId): JsonResponse
     {
         try {
-            $this->categoryService->destroy($publicId);
+            $this->poService->destroy($publicId);
 
             return respondWithMessage(
-                message: 'User data deleted successfully'
+                message: 'Purchase order data deleted successfully'
             );
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'not found')

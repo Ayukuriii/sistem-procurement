@@ -31,11 +31,11 @@ class ProductUpdateRequest extends FormRequest
                 'sometimes',
                 'string',
                 'max:255',
-                Rule::unique('products', 'sku')->ignore($publicId, 'public_id')
-                ],
+                Rule::unique('products', 'sku')->ignore($publicId, 'public_id'),
+            ],
             'name' => ['sometimes', 'string', 'max:255'],
             'unit_price' => ['sometimes', 'numeric'],
-            'is_active' => ['sometimes', 'boolean']
+            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 }

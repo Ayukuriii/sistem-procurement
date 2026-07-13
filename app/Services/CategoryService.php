@@ -101,6 +101,5 @@ class CategoryService
         }
 
         $category->delete();
-
     }
 }

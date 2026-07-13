@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\Product\ProductController;
 use App\Http\Controllers\Api\Product\ProductListController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('products')->middleware('throttle:60')->group(function () {
+Route::prefix('products')->middleware(['auth:sanctum', 'throttle:60'])->group(function () {
     Route::get('/list', [ProductListController::class, 'list']);
 
     Route::post('/', [ProductController::class, 'store']);

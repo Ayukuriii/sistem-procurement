@@ -1,0 +1,202 @@
+### Global variables
+@baseUrl = http://procureflow.test/api
+@contentJson = application/json
+@poId = 019f5ccc-6258-71e4-ba7c-82ef71ec715e
+@itemPublicId = 019f5ba7-89ab-7cba-9def-e123456789ab
+
+### POST /login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentJson}}
+
+{
+    "email": "ekadianharis@gmail.com",
+    "password": "password123"
+}
+
+# ============================================================
+# 1. LIST & BROWSE PURCHASE ORDERS
+# ============================================================
+
+### GET /purchase-orders - Basic List
+GET {{baseUrl}}/purchase-orders/list
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /purchase-orders - dengan pagination eksplisit
+GET {{baseUrl}}/purchase-orders/list?page=1&per_page=10
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /purchase-orders - dengan search
+GET {{baseUrl}}/purchase-orders/list?search=PO-2026
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /purchase-orders - sort descending by created_at
+GET {{baseUrl}}/purchase-orders/list?sort=-created_at
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /purchase-orders - dengan filter spesifik (status & date range)
+GET {{baseUrl}}/purchase-orders/list?status=approved&order_date_from=2026-01-01&order_date_to=2026-12-31
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+
+# ============================================================
+# 2. CRUD OPERATIONS (HEADER)
+# ============================================================
+
+### POST /purchase-orders - Create a new Purchase Order (Initial status = draft)
+POST {{baseUrl}}/purchase-orders
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "supplier_id": "019f5cc4-934d-71ab-9a53-8866ef4793f8",
+    "order_date": "2026-07-14",
+    "is_urgent": true,
+    "items": [
+        {
+            "product_id": "019f5ba7-4306-7022-995f-d7c3287e36e2",
+            "quantity": 10
+        }
+    ]
+}
+
+### POST /purchase-orders - Create validation error (missing required fields)
+POST {{baseUrl}}/purchase-orders
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "supplier_id": "",
+    "order_date": "invalid-date-format",
+    "items": []
+}
+
+### GET /purchase-orders/{publicId} - Get detailed info (Include embedded items)
+GET {{baseUrl}}/purchase-orders/{{poId}}?include=items
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /purchase-orders/{publicId} - Get detailed info with wrong ID
+GET {{baseUrl}}/purchase-orders/00000000-0000-0000-0000-000000000000
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### PUT /purchase-orders/{publicId} - Update PO header fields (Only allowed in draft)
+PUT {{baseUrl}}/purchase-orders/{{poId}}
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "supplier_id": "019f5cce-9962-70df-8e4c-44bd65e022de",
+    "order_date": "2026-07-20",
+    "is_urgent": false
+}
+
+### DELETE /purchase-orders/{publicId} - Soft delete a PO (Allowed in draft/cancelled)
+DELETE {{baseUrl}}/purchase-orders/{{poId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+
+# ============================================================
+# 3. STATUS / STATE MANAGEMENT
+# ============================================================
+
+### POST /purchase-orders/{publicId}/submit - Transition: draft -> submitted
+POST {{baseUrl}}/purchase-orders/{{poId}}/submit
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "reason": "Initial submission for internal review"
+}
+
+### POST /purchase-orders/{publicId}/approve - Transition: submitted -> approved
+POST {{baseUrl}}/purchase-orders/{{poId}}/approve
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "reason": "Budget approved by Manager"
+}
+
+### POST /purchase-orders/{publicId}/receive - Transition: approved -> received
+POST {{baseUrl}}/purchase-orders/{{poId}}/receive
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "reason": "All items arrived safely at the warehouse"
+}
+
+### POST /purchase-orders/{publicId}/cancel - Transition: draft/submitted/approved -> cancelled
+POST {{baseUrl}}/purchase-orders/{{poId}}/cancel
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "reason": "Supplier is out of stock, order cancelled."
+}
+
+
+# ============================================================
+# 4. PURCHASE ORDER ITEMS (LINE ITEMS)
+# ============================================================
+
+### GET /purchase-orders/{publicId}/items - List items belonging to PO (Paginated)
+GET {{baseUrl}}/purchase-orders/{{poId}}/items?page=1&per_page=5
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### POST /purchase-orders/{publicId}/items - Add an item to a PO (Only in draft)
+POST {{baseUrl}}/purchase-orders/{{poId}}/items
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "product_id": "019f5ba6-bbbb-cccc-dddd-123456789abc",
+    "quantity": 5
+}
+
+### GET /purchase-orders/{publicId}/items/{itemPublicId} - Get single item details
+GET {{baseUrl}}/purchase-orders/{{poId}}/items/{{itemPublicId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### PUT /purchase-orders/{publicId}/items/{itemPublicId} - Update item quantity (Only in draft)
+PUT {{baseUrl}}/purchase-orders/{{poId}}/items/{{itemPublicId}}
+Content-Type: {{contentJson}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+{
+    "quantity": 15
+}
+
+### DELETE /purchase-orders/{publicId}/items/{itemPublicId} - Remove item from PO (Only in draft)
+DELETE {{baseUrl}}/purchase-orders/{{poId}}/items/{{itemPublicId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+
+# ============================================================
+# 5. DOCUMENTS / ATTACHMENTS
+# ============================================================
+
+### GET /purchase-orders/{publicId}/documents - List attachments
+GET {{baseUrl}}/purchase-orders/{{poId}}/documents
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}

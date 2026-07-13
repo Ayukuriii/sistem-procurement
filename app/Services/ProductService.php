@@ -120,12 +120,12 @@ class ProductService
 
         $category = Category::firstWhere('public_id', $request['category_id']);
 
-        if (! $category){
+        if (! $category) {
             throw new \Exception('Category not found');
         }
 
         // if the category unchanged, then remove 'category_id' from the payload
-        if($product->category_id == $category->id){
+        if ($product->category_id == $category->id) {
             unset($request['category_id']);
         } else {
             // if the category not match, then replace with it's id

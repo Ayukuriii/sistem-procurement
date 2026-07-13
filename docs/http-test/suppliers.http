@@ -51,10 +51,10 @@ Accept: {{contentJson}}
 Authorization: Bearer {{login.response.body.data.token}}
 
 {
-    "name": "tambak wedi group",
-    "email": "twgroup@gmail.com",
-    "phone": "087763212098",
-    "address": "Jl. Siwalankerto 123",
+    "name": "PT Rudeu",
+    "email": "mt@gmail.com",
+    "phone": "087761232098",
+    "address": "Jl. Milis 123",
     "metadata": ""
 }
 
