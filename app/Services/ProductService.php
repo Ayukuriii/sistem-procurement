@@ -99,6 +99,7 @@ class ProductService
     public function getProduct(string $publicId): Product
     {
         $product = Product::where('public_id', $publicId)
+            ->with(['category'])
             ->first();
 
         if (! $product) {
@@ -110,7 +111,8 @@ class ProductService
 
     public function update(array $request, string $publicId): Product
     {
-        $product = Product::firstWhere('public_id', $publicId);
+        $product = Product::firstWhere('public_id', $publicId)
+            ->with(['category']);
 
         if (! $product) {
             throw new \Exception('Product not found');
