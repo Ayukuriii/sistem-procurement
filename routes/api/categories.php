@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\CategoryListController;
+use App\Http\Controllers\Api\Category\CategoryController;
+use App\Http\Controllers\Api\Category\CategoryListController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('categories')->middleware('throttle:60')->group(function () {
