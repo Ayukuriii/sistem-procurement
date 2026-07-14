@@ -1,0 +1,55 @@
+### Global variables
+@baseUrl = http://procureflow.test/api
+@contentJson = application/json
+
+### POST /login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentJson}}
+
+{
+    "email": "ekadianharis@gmail.com",
+    "password": "password123"
+}
+
+### GET /exports — list jobs
+GET {{baseUrl}}/exports
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /exports — filter by module
+GET {{baseUrl}}/exports?module=products
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### POST /exports — queue products export
+# @name exportProducts
+POST {{baseUrl}}/exports
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: {{contentJson}}
+
+{
+    "module": "products",
+    "filters": {
+        "is_active": true
+    }
+}
+
+### POST /exports — queue purchase_orders (flat + document_url)
+POST {{baseUrl}}/exports
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: {{contentJson}}
+
+{
+    "module": "purchase_orders",
+    "filters": {
+        "status": "approved"
+    }
+}
+
+### GET /exports/{exportJobId}
+GET {{baseUrl}}/exports/{{exportProducts.response.body.data.export_job_id}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}

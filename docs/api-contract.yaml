@@ -603,15 +603,22 @@ components:
     # ---------- EXPORT & IMPORT ----------
     ExportableModule:
       type: string
-      description: Modules that support export to Excel
+      description: >
+        Modules that support export to Excel. Administrator only.
+        purchase_orders export is a flat sheet — one row per line item
+        with PO header columns repeated and a document_url column when a
+        PDF is attached.
       enum: [users, suppliers, product_categories, products, purchase_orders]
 
     ImportableModule:
       type: string
       description: >
-        Modules that support import from Excel. purchase_orders is not
+        Modules that support create-only import from Excel (duplicates
+        of unique fields fail per-row). purchase_orders is not
         importable — it must be created through the standard PO endpoints
         so line-item pricing snapshots and status transitions stay consistent.
+        User import sets password to the default value `password` (no
+        password column in the template). Administrator only.
       enum: [users, suppliers, product_categories, products]
 
     ExportJobStatus:
@@ -1826,6 +1833,7 @@ paths:
     get:
       tags: [Export & Import]
       summary: List export jobs requested by the current user
+      description: Administrator only. Staff receive 403.
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PerPageParam"
@@ -1851,10 +1859,12 @@ paths:
       tags: [Export & Import]
       summary: Request an export for a given module
       description: >
-        Export runs asynchronously in the background regardless of module
-        or data size. The response only confirms the job was queued; the
-        resulting .xlsx file is emailed to the requesting user as a
-        download link once ready. Poll GET /exports/{exportJobId} if the
+        Administrator only. Export runs asynchronously in the background
+        regardless of module or data size. The response only confirms the
+        job was queued; the resulting .xlsx file is emailed to the
+        requesting user (Gmail SMTP) as a download link once ready.
+        purchase_orders produces a flat one-row-per-item sheet including
+        document_url when present. Poll GET /exports/{exportJobId} if the
         UI needs to reflect job progress instead of waiting for email.
       requestBody:
         required: true
@@ -1907,22 +1917,26 @@ paths:
       tags: [Export & Import]
       summary: Import data for a given module from Excel (.xlsx)
       description: >
-        Rows are validated individually. A row with errors does not fail
-        the whole import — failed rows are returned in `failed_rows` so
-        the user can correct and re-upload. Processed synchronously; the
-        response reflects the final result of the whole file.
+        Administrator only. Create-only import — rows that conflict with
+        unique constraints (e.g. users.email, products.sku) are reported
+        in `failed_rows` and are not updated. Rows are validated
+        individually. A row with errors does not fail the whole import —
+        failed rows are returned in `failed_rows` so the user can correct
+        and re-upload. Processed synchronously; the response reflects the
+        final result of the whole file.
 
 
         Module-specific validation:
 
         - **users**: each row must include a `role` column with value
-          `administrator` or `staff`. The system verifies the value
-          against existing roles before inserting. If a row's role value
-          does not match any recognized role, that row is rejected and
-          reported in `failed_rows` — it is not inserted.
+          `administrator` or `staff`. Password is always set to the
+          default `password` (no password column). The system verifies the
+          role value against existing roles before inserting. If a row's
+          role value does not match any recognized role, that row is
+          rejected and reported in `failed_rows` — it is not inserted.
         - **suppliers**, **product_categories**, **products**: validated
           against the same rules as their respective create endpoints
-          (required fields, uniqueness of sku/name/email, etc.).
+          (required fields, uniqueness of sku/email, etc.).
       requestBody:
         required: true
         content:
@@ -1965,8 +1979,10 @@ paths:
           schema:
             $ref: "#/components/schemas/ImportableModule"
       description: >
-        The users template includes a `role` column documenting the
-        accepted values (administrator, staff).
+        Administrator only. The users template includes a `role` column
+        documenting the accepted values (administrator, staff). Password
+        is not collected — imported users receive the default password
+        `password`.
       responses:
         "200":
           description: Template file

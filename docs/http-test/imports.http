@@ -1,0 +1,65 @@
+### Global variables
+@baseUrl = http://procureflow.test/api
+@contentJson = application/json
+
+### POST /login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentJson}}
+
+{
+    "email": "ekadianharis@gmail.com",
+    "password": "password123"
+}
+
+### GET /imports/template — users
+GET {{baseUrl}}/imports/template?module=users
+Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /imports/template — products
+GET {{baseUrl}}/imports/template?module=products
+Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /imports/template — suppliers
+GET {{baseUrl}}/imports/template?module=suppliers
+Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /imports/template — product_categories
+GET {{baseUrl}}/imports/template?module=product_categories
+Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Authorization: Bearer {{login.response.body.data.token}}
+
+### POST /imports — products (multipart)
+POST {{baseUrl}}/imports
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: multipart/form-data; boundary=----Boundary
+
+------Boundary
+Content-Disposition: form-data; name="module"
+
+products
+------Boundary
+Content-Disposition: form-data; name="file"; filename="products.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./products.xlsx
+------Boundary--
+
+### POST /imports — users (multipart)
+POST {{baseUrl}}/imports
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: multipart/form-data; boundary=----Boundary
+
+------Boundary
+Content-Disposition: form-data; name="module"
+
+users
+------Boundary
+Content-Disposition: form-data; name="file"; filename="users.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./users.xlsx
+------Boundary--

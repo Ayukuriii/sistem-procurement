@@ -18,3 +18,7 @@ require __DIR__.'/api/purchase-orders.php';
 require __DIR__.'/api/documents.php';
 
 require __DIR__.'/api/audits.php';
+
+require __DIR__.'/api/exports.php';
+
+require __DIR__.'/api/imports.php';
