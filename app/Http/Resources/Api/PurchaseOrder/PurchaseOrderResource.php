@@ -25,7 +25,7 @@ class PurchaseOrderResource extends JsonResource
             'status' => $this->status,
             'is_urgent' => $this->is_urgent,
             'notes' => $this->notes,
-            'item_count' => $this->item_count,
+            'items_count' => $this->items_count,
             'items_total' => $this->items_total,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

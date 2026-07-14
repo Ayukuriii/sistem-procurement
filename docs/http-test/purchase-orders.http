@@ -1,8 +1,8 @@
 ### Global variables
 @baseUrl = http://procureflow.test/api
 @contentJson = application/json
-@poId = 019f5ccc-6258-71e4-ba7c-82ef71ec715e
-@itemPublicId = 019f5ba7-89ab-7cba-9def-e123456789ab
+@poId = 019f5f63-b428-7110-871c-a27b2c063997
+@itemPublicId = 019f5f63-b42a-7351-9946-bc4f21b1628c
 
 ### POST /login
 # @name login
@@ -60,7 +60,7 @@ Authorization: Bearer {{login.response.body.data.token}}
     "is_urgent": true,
     "items": [
         {
-            "product_id": "019f5ba7-4306-7022-995f-d7c3287e36e2",
+            "product_id": "019f5ba5-9ba5-7168-a560-0f5b4286952d",
             "quantity": 10
         }
     ]
@@ -167,7 +167,7 @@ Accept: {{contentJson}}
 Authorization: Bearer {{login.response.body.data.token}}
 
 {
-    "product_id": "019f5ba6-bbbb-cccc-dddd-123456789abc",
+    "product_id": "019f5ba6-1a48-732c-af56-7aa7478e8a93",
     "quantity": 5
 }
 
@@ -183,7 +183,7 @@ Accept: {{contentJson}}
 Authorization: Bearer {{login.response.body.data.token}}
 
 {
-    "quantity": 15
+    "quantity": 20
 }
 
 ### DELETE /purchase-orders/{publicId}/items/{itemPublicId} - Remove item from PO (Only in draft)

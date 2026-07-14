@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Constants\Paginations;
 use App\Constants\Statuses;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,7 +28,9 @@ class PurchaseOrderService
      */
     public function paginate(array $filters, int $perPage = self::DEFAULT_PER_PAGE): LengthAwarePaginator
     {
-        $query = PurchaseOrder::query();
+        $query = PurchaseOrder::query()
+            ->withCount('items') 
+            ->withSum('items as items_total', 'subtotal');;
 
         if (! empty($filters['search'])) {
             $this->applySearch($query, $filters['search']);
@@ -73,12 +76,22 @@ class PurchaseOrderService
             throw new \Exception('Unauthorized', 401);
         }
 
+        // validate product items
+        $productIds = collect($request['items'])->pluck('product_id')->toArray();
+        $products = Product::whereIn('public_id', $productIds)->get()->keyBy('public_id');
+
+        foreach ($request['items'] as $item) {
+            if (! isset($products[$item['product_id']])) {
+                throw new \Exception("Product with ID {$item['product_id']} not found");
+            }
+        }
+
         /**
          * use atomic lock for race condition safety
          * atomic lock max duration 10s
          */
-        return Cache::lock('generate-po-number', 5)->block(10, function () use ($request, $supplier, $userId) {
-            return DB::transaction(function () use ($request, $supplier, $userId) {
+        return Cache::lock('generate-po-number', 5)->block(10, function () use ($request, $supplier, $userId, $products) {
+            return DB::transaction(function () use ($request, $supplier, $userId, $products) {
                 $request['po_number'] = $this->generatePoNumber();
 
                 $purchaseOrder = new PurchaseOrder($request);
@@ -90,7 +103,20 @@ class PurchaseOrderService
 
                 $purchaseOrder->save();
 
-                return $purchaseOrder;
+                foreach ($request['items'] as $itemData) {
+                    $product = $products[$itemData['product_id']];
+                    $subtotal = $product->unit_price * $itemData['quantity'];
+
+                    $purchaseOrder->items()->create([
+                        'product_id' => $product->id,
+                        'product_name_snapshot' => $product->name,
+                        'unit_price_snapshot' => $product->unit_price,
+                        'quantity' => $itemData['quantity'],
+                        'subtotal' => $subtotal,
+                    ]);
+                }
+
+                return $purchaseOrder->load('items.product');
             });
         });
     }
@@ -102,7 +128,9 @@ class PurchaseOrderService
 
         $currentYear = now()->tz('asia/jakarta')->format('Y');
 
-        $poCount = PurchaseOrder::whereBetween('created_at', [$startOfYear, $endOfYear])->count();
+        $poCount = PurchaseOrder::whereBetween('created_at', [$startOfYear, $endOfYear])
+            ->withTrashed()
+            ->count();
 
         $nextSequence = $poCount + 1;
 
@@ -116,6 +144,8 @@ class PurchaseOrderService
                 'supplier',
                 'creator',
             ])
+            ->withCount('items')
+            ->withSum('items as items_total', 'subtotal')
             ->first();
 
         if (! $purchaseOrder) {
@@ -133,7 +163,7 @@ class PurchaseOrderService
             throw new \Exception('Purchase order not found');
         }
 
-        if($purchaseOrder->status !== Statuses::PO_DRAFT){
+        if ($purchaseOrder->status !== Statuses::PO_DRAFT) {
             throw new \Exception('Cannot update purchase order information. Status not draft');
         }
 

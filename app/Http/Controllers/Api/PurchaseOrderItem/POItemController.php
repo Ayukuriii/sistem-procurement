@@ -1,32 +1,36 @@
 <?php
 
-namespace App\Http\Controllers\Api\PurchaseOrder;
+namespace App\Http\Controllers\Api\PurchaseOrderItem;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\PurchaseOrder\POCreateRequest;
-use App\Http\Requests\Api\PurchaseOrder\POUpdateRequest;
-use App\Http\Resources\Api\PurchaseOrder\PurchaseOrderResource;
-use App\Services\PurchaseOrderService;
+use App\Http\Requests\Api\PurchaseOrder\POItemCreateRequest;
+use App\Http\Requests\Api\PurchaseOrder\POItemUpdateRequest;
+use App\Http\Resources\POItemResource;
+use App\Services\POItemService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
-class PurchaseOrderController extends Controller
+class POItemController extends Controller
 {
     public function __construct(
-        public PurchaseOrderService $poService
+        public POItemService $poItemService
     ) {}
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(POCreateRequest $request): JsonResponse
+    public function store(POItemCreateRequest $request, string $publicId): JsonResponse
     {
         try {
-            $res = $this->poService->store($request->validated());
+            $res = $this->poItemService->store(
+                request: $request->validated(),
+                publicId: $publicId
+            );
 
             return respondWithData(
-                data: new PurchaseOrderResource($res),
-                message: 'Success create purchase order data'
+                data: new POItemResource($res),
+                message: 'Success create purchase order item data'
             );
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'already')
@@ -43,14 +47,17 @@ class PurchaseOrderController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $publicId): JsonResponse
+    public function show(string $publicId, string $itemPublicId): JsonResponse
     {
         try {
-            $res = $this->poService->getPurchaseOrder($publicId);
+            $res = $this->poItemService->getPoItem(
+                publicId: $publicId,
+                itemPublicId: $itemPublicId,
+            );
 
             return respondWithData(
-                data: new PurchaseOrderResource($res),
-                message: 'Purchase order data retrieved successfully'
+                data: new POItemResource($res),
+                message: 'Purchase order item data retrieved successfully'
             );
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'not found')
@@ -67,14 +74,18 @@ class PurchaseOrderController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(POUpdateRequest $request, string $publicId): JsonResponse
+    public function update(POItemUpdateRequest $request, string $publicId, string $itemPublicId): JsonResponse
     {
         try {
-            $res = $this->poService->update($request->validated(), $publicId);
+            $res = $this->poItemService->update(
+                request: $request->validated(),
+                publicId: $publicId,
+                itemPublicId: $itemPublicId
+            );
 
             return respondWithData(
-                data: new PurchaseOrderResource($res),
-                message: 'Purchase order data updated successfully'
+                data: new POItemResource($res),
+                message: 'Purchase order item data updated successfully'
             );
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'not found')
@@ -91,13 +102,16 @@ class PurchaseOrderController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $publicId): JsonResponse
+    public function destroy(string $publicId, string $itemPublicId): JsonResponse
     {
         try {
-            $this->poService->destroy($publicId);
+            $this->poItemService->destroy(
+                publicId: $publicId,
+                itemPublicId: $itemPublicId
+            );
 
             return respondWithMessage(
-                message: 'Purchase order data deleted successfully'
+                message: 'Purchase order item data deleted successfully'
             );
         } catch (\Exception $e) {
             $statusCode = str_contains($e->getMessage(), 'not found')
