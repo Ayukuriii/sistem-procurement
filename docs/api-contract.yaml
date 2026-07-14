@@ -401,6 +401,9 @@ components:
         items_total:
           type: integer
           description: Sum of subtotal across all line items
+        has_document:
+          type: boolean
+          description: Whether a PDF document is attached to this PO (exactly one allowed)
         # items:
         #   type: array
         #   description: >
@@ -525,6 +528,9 @@ components:
             file_url:
               type: string
               format: uri
+              description: >
+                Computed at response time from file_path (not stored in the
+                database). Public URL on the public disk.
             mime_type:
               type: string
         created_at:
@@ -1360,6 +1366,10 @@ paths:
     post:
       tags: [Purchase Orders]
       summary: "Status transition: draft -> submitted"
+      description: >
+        Requires that a PDF document has been uploaded via
+        POST /purchase-orders/{publicId}/documents. Returns 422 if no
+        document is attached.
       requestBody:
         content:
           application/json:
@@ -1377,6 +1387,12 @@ paths:
                     $ref: "#/components/schemas/PurchaseOrder"
         "409":
           description: Invalid transition from the current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: No PDF document attached to this purchase order
           content:
             application/json:
               schema:
@@ -1593,12 +1609,18 @@ paths:
                 $ref: "#/components/schemas/Error"
 
   # ---------------- DOCUMENTS ----------------
+  # Exactly one PDF per purchase order. Re-upload while status is draft
+  # replaces the existing file (same document public_id). Delete is not
+  # supported — replace only. Upload is only allowed while PO is draft.
   /purchase-orders/{publicId}/documents:
     parameters:
       - $ref: "#/components/parameters/PublicId"
     get:
       tags: [Documents]
-      summary: List documents attached to a PO
+      summary: List documents attached to a PO (0 or 1 item)
+      description: >
+        Returns an array containing at most one document. Empty array
+        when no PDF has been uploaded yet.
       responses:
         "200":
           description: OK
@@ -1609,11 +1631,19 @@ paths:
                 properties:
                   data:
                     type: array
+                    maxItems: 1
                     items:
                       $ref: "#/components/schemas/Document"
+        "404":
+          $ref: "#/components/responses/NotFound"
     post:
       tags: [Documents]
-      summary: Upload an attachment (invoice, delivery note, etc.)
+      summary: Upload or replace the PDF attachment for a draft PO
+      description: >
+        Accepts application/pdf only, max 500 KB. Allowed only while
+        purchase order status is draft. If a document already exists,
+        the file is replaced and the same document public_id is kept.
+        Always returns 201.
       requestBody:
         required: true
         content:
@@ -1625,12 +1655,13 @@ paths:
                 file:
                   type: string
                   format: binary
+                  description: PDF file, max 500 KB
                 metadata:
                   type: object
                   additionalProperties: true
       responses:
         "201":
-          description: Uploaded
+          description: Uploaded (or replaced)
           content:
             application/json:
               schema:
@@ -1638,15 +1669,26 @@ paths:
                 properties:
                   data:
                     $ref: "#/components/schemas/Document"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "422":
-          $ref: "#/components/responses/ValidationFailed"
+          description: >
+            Validation failed (non-PDF, too large, or PO not in draft)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
 
   /documents/{publicId}:
     parameters:
       - $ref: "#/components/parameters/PublicId"
     get:
       tags: [Documents]
-      summary: Get document details (including a signed download URL)
+      summary: Get document details (including a public download URL)
+      description: >
+        metadata.file_url is computed at response time from the stored
+        file_path (not persisted). Public URL from the public disk
+        (e.g. /storage/purchase-orders/{poId}/{uuid}.pdf).
       responses:
         "200":
           description: OK
@@ -1657,14 +1699,6 @@ paths:
                 properties:
                   data:
                     $ref: "#/components/schemas/Document"
-        "404":
-          $ref: "#/components/responses/NotFound"
-    delete:
-      tags: [Documents]
-      summary: Delete a document
-      responses:
-        "204":
-          description: Deleted
         "404":
           $ref: "#/components/responses/NotFound"
 

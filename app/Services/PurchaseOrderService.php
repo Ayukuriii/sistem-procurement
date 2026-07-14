@@ -29,8 +29,9 @@ class PurchaseOrderService
     public function paginate(array $filters, int $perPage = self::DEFAULT_PER_PAGE): LengthAwarePaginator
     {
         $query = PurchaseOrder::query()
-            ->withCount('items') 
-            ->withSum('items as items_total', 'subtotal');;
+            ->withCount('items')
+            ->withSum('items as items_total', 'subtotal')
+            ->withExists('document as document_exists');
 
         if (! empty($filters['search'])) {
             $this->applySearch($query, $filters['search']);
@@ -143,6 +144,7 @@ class PurchaseOrderService
             ->with([
                 'supplier',
                 'creator',
+                'document',
             ])
             ->withCount('items')
             ->withSum('items as items_total', 'subtotal')
@@ -223,6 +225,9 @@ class PurchaseOrderService
                 case Statuses::PO_SUBMITTED:
                     if ($currentStatus !== Statuses::PO_DRAFT) {
                         throw new \Exception('Only draft purchase orders can be submitted.');
+                    }
+                    if (! $purchaseOrder->document()->exists()) {
+                        throw new \Exception('A PDF document must be uploaded before submitting this purchase order.');
                     }
                     break;
 

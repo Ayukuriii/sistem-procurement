@@ -27,6 +27,10 @@ class PurchaseOrderResource extends JsonResource
             'notes' => $this->notes,
             'items_count' => $this->items_count,
             'items_total' => $this->items_total,
+            'has_document' => (bool) ($this->document_exists
+                ?? ($this->relationLoaded('document')
+                    ? $this->document !== null
+                    : $this->document()->exists())),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

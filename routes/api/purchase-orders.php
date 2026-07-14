@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\Document\DocumentController;
+use App\Http\Controllers\Api\Document\DocumentListController;
 use App\Http\Controllers\Api\PurchaseOrder\PurchaseOrderController;
 use App\Http\Controllers\Api\PurchaseOrder\PurchaseOrderListController;
 use App\Http\Controllers\Api\PurchaseOrder\StatusManagementController;
@@ -28,4 +30,10 @@ Route::prefix('purchase-orders')->middleware(['auth:sanctum', 'throttle:60'])->g
     Route::get('/{publicId}/items/{itemPublicId}', [POItemController::class, 'show']);
     Route::put('/{publicId}/items/{itemPublicId}', [POItemController::class, 'update']);
     Route::delete('/{publicId}/items/{itemPublicId}', [POItemController::class, 'destroy']);
+
+    /**
+     * Purchase Order Documents
+     */
+    Route::get('/{publicId}/documents', [DocumentListController::class, 'list']);
+    Route::post('/{publicId}/documents', [DocumentController::class, 'store']);
 });

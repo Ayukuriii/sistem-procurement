@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PurchaseOrder extends Model
@@ -33,13 +34,23 @@ class PurchaseOrder extends Model
     }
 
     /**
-     * Get documents attached to this booking
+     * Get documents attached to this purchase order (legacy MorphMany).
      *
      * @return MorphMany<Document>
      */
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    /**
+     * Exactly one PDF document per purchase order.
+     *
+     * @return MorphOne<Document>
+     */
+    public function document(): MorphOne
+    {
+        return $this->morphOne(Document::class, 'documentable');
     }
 
     /**
