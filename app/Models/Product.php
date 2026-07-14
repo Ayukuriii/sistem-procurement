@@ -6,10 +6,12 @@ use App\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Product extends Model
+class Product extends Model implements Auditable
 {
-    use HasPublicId, SoftDeletes;
+    use AuditableTrait, HasPublicId, SoftDeletes;
 
     protected $fillable = [
         'category_id',

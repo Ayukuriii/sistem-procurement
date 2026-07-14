@@ -9,10 +9,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Document extends Model
+class Document extends Model implements Auditable
 {
-    use HasPublicId, SoftDeletes;
+    use AuditableTrait, HasPublicId, SoftDeletes;
+
+    /**
+     * @var list<string>
+     */
+    protected array $auditExclude = [
+        'file_path',
+    ];
 
     protected $fillable = [
         'documentable_type',

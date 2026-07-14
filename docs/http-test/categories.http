@@ -1,7 +1,7 @@
 ### Global variables
 @baseUrl = http://procureflow.test/api
 @contentJson = application/json
-@categoryId = 019f574a-eda0-711c-91bc-5c1e39be9104
+@categoryId = 019f6137-ca2a-73e1-94f1-994a281104a8
 
 ### POST /login
 # @name login
@@ -46,7 +46,7 @@ Accept: {{contentJson}}
 Authorization: Bearer {{login.response.body.data.token}}
 
 {
-    "name": "Dota 2"
+    "name": "Hardware"
 }
 
 ### POST /categories - Create a new categort records with empty name

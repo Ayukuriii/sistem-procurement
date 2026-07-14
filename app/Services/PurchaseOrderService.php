@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Constants\Audits;
 use App\Constants\Paginations;
 use App\Constants\Statuses;
 use App\Models\Product;
@@ -11,6 +12,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 
 /**
  * Class PurchaseOrderService
@@ -253,10 +256,18 @@ class PurchaseOrderService
                     throw new \Exception('Invalid target status.');
             }
 
-            // Apply updates
+            $oldStatus = $currentStatus;
             $purchaseOrder->status = $targetStatus;
 
-            $purchaseOrder->save();
+            PurchaseOrder::withoutAuditing(function () use ($purchaseOrder) {
+                $purchaseOrder->save();
+            });
+
+            $purchaseOrder->auditEvent = Audits::EVENT_STATUS_CHANGED;
+            $purchaseOrder->isCustomEvent = true;
+            $purchaseOrder->auditCustomOld = ['status' => $oldStatus];
+            $purchaseOrder->auditCustomNew = ['status' => $targetStatus];
+            Event::dispatch(new AuditCustom($purchaseOrder));
 
             return $purchaseOrder;
         });

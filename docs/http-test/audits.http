@@ -1,0 +1,161 @@
+### Global variables
+@baseUrl = http://procureflow.test/api
+@contentJson = application/json
+@productId = 019f5ba7-4306-7022-995f-d7c3287e36e2
+@poId = 019f5f63-b428-7110-871c-a27b2c063997
+@categoryId = 019f6136-cff4-7305-971b-167d375cc729
+@supplierId = 019f569c-c630-72b4-8f6c-924d2dd4fd0a
+@userId = 019f55bc-feb2-71b2-928a-3841c4031c2e
+@staffEmail = ischaden@example.net
+@staffPassword = password123
+
+### POST /login (administrator)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentJson}}
+
+{
+    "email": "ekadianharis@gmail.com",
+    "password": "password123"
+}
+
+# ============================================================
+# 1. GLOBAL AUDIT LIST (administrator only)
+# ============================================================
+
+### GET /audits - Global list (admin)
+GET {{baseUrl}}/audits
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - dengan pagination
+GET {{baseUrl}}/audits?page=1&per_page=10
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - sort ascending by created_at
+GET {{baseUrl}}/audits?sort=created_at
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - filter by event created
+GET {{baseUrl}}/audits?event=created
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - filter by event updated
+GET {{baseUrl}}/audits?event=updated
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - filter by event status_changed
+GET {{baseUrl}}/audits?event=status_changed
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - filter by actor (user public_id)
+GET {{baseUrl}}/audits?user_id={{userId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - filter by date range
+GET {{baseUrl}}/audits?date_from=2026-07-01&date_to=2026-07-31
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - filter auditable_type only (admin)
+GET {{baseUrl}}/audits?auditable_type=user
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - kombinasi filter + pagination
+GET {{baseUrl}}/audits?event=updated&auditable_type=product&page=1&per_page=20&sort=-created_at
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+# ============================================================
+# 2. RESOURCE-SCOPED AUDITS (detail page — semua authenticated)
+# ============================================================
+
+### GET /audits - activity log product
+GET {{baseUrl}}/audits?auditable_type=product&auditable_id={{productId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - activity log category
+GET {{baseUrl}}/audits?auditable_type=category&auditable_id={{categoryId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - activity log supplier
+GET {{baseUrl}}/audits?auditable_type=supplier&auditable_id={{supplierId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - activity log user
+GET {{baseUrl}}/audits?auditable_type=user&auditable_id={{userId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - activity log purchase order (merged: PO + items + documents)
+GET {{baseUrl}}/audits?auditable_type=purchase_order&auditable_id={{poId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - PO timeline filter status_changed only
+GET {{baseUrl}}/audits?auditable_type=purchase_order&auditable_id={{poId}}&event=status_changed
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - PO timeline dengan pagination
+GET {{baseUrl}}/audits?auditable_type=purchase_order&auditable_id={{poId}}&page=1&per_page=10&sort=-created_at
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+# ============================================================
+# 3. NEGATIVE / EDGE CASES
+# ============================================================
+
+### GET /audits - resource tidak ditemukan (404)
+GET {{baseUrl}}/audits?auditable_type=product&auditable_id=00000000-0000-7000-8000-000000000000
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - auditable_type tidak valid (422)
+GET {{baseUrl}}/audits?auditable_type=invalid_type
+Accept: {{contentJson}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### GET /audits - tanpa token (401)
+GET {{baseUrl}}/audits
+Accept: {{contentJson}}
+
+# ============================================================
+# 4. STAFF ACCESS 
+# Global = 403; resource-scoped = 200
+# ============================================================
+
+### POST /login (staff)
+# @name loginStaff
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentJson}}
+
+{
+    "email": "{{staffEmail}}",
+    "password": "{{staffPassword}}"
+}
+
+### GET /audits - staff global list (expect 403)
+GET {{baseUrl}}/audits
+Accept: {{contentJson}}
+Authorization: Bearer {{loginStaff.response.body.data.token}}
+
+### GET /audits - staff boleh lihat activity log PO
+GET {{baseUrl}}/audits?auditable_type=purchase_order&auditable_id={{poId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{loginStaff.response.body.data.token}}
+
+### GET /audits - staff boleh lihat activity log product
+GET {{baseUrl}}/audits?auditable_type=category&auditable_id={{categoryId}}
+Accept: {{contentJson}}
+Authorization: Bearer {{loginStaff.response.body.data.token}}

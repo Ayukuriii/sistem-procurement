@@ -545,17 +545,40 @@ components:
           type: string
           format: uuid
         user:
-          $ref: "#/components/schemas/User"
+          type: object
+          nullable: true
+          properties:
+            public_id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
         event:
           type: string
           enum: [created, updated, deleted, restored, status_changed]
+        action:
+          type: string
+          description: Human-readable Bahasa Indonesia label for `event`
+          example: "Diperbarui"
+        description:
+          type: string
+          description: >
+            Detailed Bahasa Indonesia narrative of the change (per-field diffs
+            when applicable). UI column "description".
+          example: "Memperbarui produk SKU-001 \"Kabel HDMI\": harga satuan dari 10000 menjadi 12000"
         auditable_type:
           type: string
+          description: >
+            Resource slug. One of user, category, product, supplier,
+            purchase_order, purchase_order_item, document.
           example: "purchase_order"
         auditable_id:
           type: string
           format: uuid
           description: public_id of the audited resource
+          nullable: true
         old_values:
           type: object
           additionalProperties: true
@@ -566,10 +589,13 @@ components:
           nullable: true
         url:
           type: string
+          nullable: true
         ip_address:
           type: string
+          nullable: true
         user_agent:
           type: string
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -1707,6 +1733,23 @@ paths:
     get:
       tags: [Audits]
       summary: List audit trail entries (read-only)
+      description: >
+        Returns a paginated audit trail.
+
+        **Access (option B):**
+        - Global list (without both `auditable_type` and `auditable_id`):
+          `administrator` only. Staff receive 403.
+        - Resource-scoped list (`auditable_type` + `auditable_id`): any
+          authenticated user. Use this for the activity table on a resource
+          detail page.
+
+        **Purchase order timeline:** when `auditable_type=purchase_order` and
+        `auditable_id` is a PO public_id, results include audits for the PO
+        itself plus related purchase order items and documents, merged into
+        one timeline ordered by `created_at`.
+
+        UI columns map as: action date → `created_at`, actor → `user`,
+        action → `action`, description → `description`.
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PerPageParam"
@@ -1714,6 +1757,14 @@ paths:
           in: query
           schema:
             type: string
+            enum:
+              - user
+              - category
+              - product
+              - supplier
+              - purchase_order
+              - purchase_order_item
+              - document
             example: "purchase_order"
         - name: auditable_id
           in: query
@@ -1723,7 +1774,7 @@ paths:
             format: uuid
         - name: user_id
           in: query
-          description: User public_id
+          description: User public_id (actor filter)
           schema:
             type: string
             format: uuid
@@ -1742,6 +1793,12 @@ paths:
           schema:
             type: string
             format: date
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [created_at, -created_at]
+            default: -created_at
       responses:
         "200":
           description: OK
@@ -1756,6 +1813,10 @@ paths:
                       $ref: "#/components/schemas/Audit"
                   meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   # ---------------- EXPORT & IMPORT ----------------
   # Generic, module-driven endpoints. The UI is expected to pass `module`

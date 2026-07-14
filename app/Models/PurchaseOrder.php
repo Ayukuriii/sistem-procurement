@@ -9,10 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class PurchaseOrder extends Model
+class PurchaseOrder extends Model implements Auditable
 {
-    use HasPublicId, SoftDeletes;
+    use AuditableTrait, HasPublicId, SoftDeletes;
 
     protected $fillable = [
         'po_number',
@@ -54,7 +56,7 @@ class PurchaseOrder extends Model
     }
 
     /**
-     * Get the Supplier that owns the PurchaseOrderController
+     * Get the Supplier that owns the PurchaseOrder
      */
     public function supplier(): BelongsTo
     {

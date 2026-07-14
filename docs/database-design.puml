@@ -172,9 +172,12 @@ purchase_orders ||--o{ purchase_order_items : "has many"
 products ||--o{ purchase_order_items : "referenced by"
 
 users ||--o{ audits : "performed by"
+users ..> audits : "auditable"
+categories ..> audits : "auditable"
+products ..> audits : "auditable"
+suppliers ..> audits : "auditable"
 purchase_orders ..> audits : "auditable"
 purchase_order_items ..> audits : "auditable"
-suppliers ..> audits : "auditable"
-products ..> audits : "auditable"
+documents ..> audits : "auditable"
 
 @enduml

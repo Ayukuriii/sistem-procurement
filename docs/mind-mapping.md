@@ -5,7 +5,7 @@ mindmap
       Initiate BE project ✅
       Install Sanctum
       Install Spatie Permission ✅ migration published
-      Install Laravel Auditing
+      Install Laravel Auditing ✅
       Install Laravel Excel
       Config Queue driver
     Database Layer
@@ -16,6 +16,7 @@ mindmap
         PurchaseOrder ✅
         PurchaseOrderItem ✅
         User ✅ perlu penyesuaian
+        Audit ✅
       Seeder & Factory
         Role seeder admin/staff
         Dummy data seeder
@@ -37,10 +38,13 @@ mindmap
       Filtering sorting searching
       Select2 datasource endpoint
       Public_id sebagai route key
-    Audit Trail
-      Auditable trait per model
-      Endpoint get audit history
+    Audit Trail ✅
+      Auditable trait per model ✅
+      Endpoint get audit history ✅
       Snapshot vs audit log separation
+      Global list admin-only; resource-scoped for staff
+      PO timeline merges items + documents
+      Description Bahasa Indonesia detail
     Excel Export Import
       Export dynamic field
       Import with validation
