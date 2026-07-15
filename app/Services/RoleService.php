@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Constants\Paginations;
-use App\Models\Category;
+use App\Constants\Roles;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
-class CategoryService
+class RoleService
 {
     private const SORTABLE_COLUMNS = ['name', 'created_at'];
 
@@ -15,29 +17,20 @@ class CategoryService
 
     private const DEFAULT_PER_PAGE = Paginations::DEFAULT_PER_PAGE;
 
+    private const GUARD_NAME = 'web';
+
     /**
      * @param  array{search?: ?string, sort?: ?string}  $filters
      */
     public function paginate(array $filters, int $perPage = self::DEFAULT_PER_PAGE): LengthAwarePaginator
     {
-        $query = Category::query();
+        $query = Role::query()->where('guard_name', self::GUARD_NAME);
 
         if (! empty($filters['search'])) {
             $this->applySearch($query, $filters['search']);
         }
 
         $this->applySort($query, $filters['sort'] ?? null);
-
-        return $query->paginate($perPage);
-    }
-
-    public function paginateForSelect(?string $term, int $perPage = 20): LengthAwarePaginator
-    {
-        $query = Category::query()->orderBy('name');
-
-        if ($term !== null && $term !== '') {
-            $this->applySearch($query, $term);
-        }
 
         return $query->paginate($perPage);
     }
@@ -64,53 +57,54 @@ class CategoryService
         $query->orderBy($column, $direction);
     }
 
-    public function store(array $request): Category
+    public function store(array $request): Role
     {
         return DB::transaction(function () use ($request) {
-            $request['name'] = strtolower($request['name']);
-            $category = Category::create($request);
-
-            return $category->fresh();
+            return Role::create([
+                'public_id' => (string) Str::uuid7(),
+                'name' => $request['name'],
+                'guard_name' => self::GUARD_NAME,
+            ]);
         });
     }
 
-    public function getCategory(string $publicId): Category
+    public function getRole(string $publicId): Role
     {
-        $category = Category::where('public_id', $publicId)
+        $role = Role::query()
+            ->where('guard_name', self::GUARD_NAME)
+            ->where('public_id', $publicId)
             ->first();
 
-        if (! $category) {
-            throw new \Exception('Category not found');
+        if (! $role) {
+            throw new \Exception('Role not found');
         }
 
-        return $category;
+        return $role;
     }
 
-    public function update(array $request, string $publicId): Category
+    public function update(array $request, string $publicId): Role
     {
-        $category = Category::firstWhere('public_id', $publicId);
+        $role = $this->getRole($publicId);
 
-        if (! $category) {
-            throw new \Exception('Category not found');
-        }
+        $role->update([
+            'name' => $request['name'],
+        ]);
 
-        if (isset($request['name'])) {
-            $request['name'] = strtolower($request['name']);
-        }
-
-        $category->update($request);
-
-        return $category->fresh();
+        return $role->fresh();
     }
 
     public function destroy(string $publicId): void
     {
-        $category = Category::firstWhere('public_id', $publicId);
+        $role = $this->getRole($publicId);
 
-        if (! $category) {
-            throw new \Exception('Category not found');
+        if (in_array($role->name, [Roles::ROLE_ADMIN, Roles::ROLE_STAFF], true)) {
+            throw new \Exception('System role cannot be deleted');
         }
 
-        $category->delete();
+        if ($role->users()->exists()) {
+            throw new \Exception('Role already assigned to users');
+        }
+
+        $role->delete();
     }
 }

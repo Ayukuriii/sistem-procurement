@@ -31,6 +31,19 @@ class SupplierService
         return $query->paginate($perPage);
     }
 
+    public function paginateForSelect(?string $term, int $perPage = 20): LengthAwarePaginator
+    {
+        $query = Supplier::query()
+            ->where('is_active', true)
+            ->orderBy('name');
+
+        if ($term !== null && $term !== '') {
+            $this->applySearch($query, $term);
+        }
+
+        return $query->paginate($perPage);
+    }
+
     private function applySearch($query, string $search): void
     {
         $query->where(function ($q) use ($search) {

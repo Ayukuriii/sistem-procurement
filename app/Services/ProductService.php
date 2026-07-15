@@ -32,6 +32,22 @@ class ProductService
         return $query->paginate($perPage);
     }
 
+    public function paginateForSelect(?string $term, int $perPage = 20): LengthAwarePaginator
+    {
+        $query = Product::query()
+            ->where('is_active', true)
+            ->orderBy('name');
+
+        if ($term !== null && $term !== '') {
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('sku', 'like', "%{$term}%");
+            });
+        }
+
+        return $query->paginate($perPage);
+    }
+
     private function applySearch($query, string $search): void
     {
         $query->where(function ($q) use ($search) {
